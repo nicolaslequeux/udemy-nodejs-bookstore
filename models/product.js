@@ -1,16 +1,45 @@
-const products = [];
+const fs = require("fs");
+const path = require("path");
+
+// global helper constant for the path
+const p = path.join(
+  path.dirname(process.mainModule.filename),
+  "data",
+  "products.json"
+);
+
+// helper function
+const getProductsFromFile = (callback) => {
+  fs.readFile(p, (err, fileContent) => {
+    if (err) {
+      // return []; // sans callback fetchAll return undefined as fs.readfile is too slow
+      callback([]);
+    } else {
+      // sans callback fetchAll return undefined as fs.readfile is too slow !!
+      // return JSON.parse(fileContent)
+      callback(JSON.parse(fileContent));
+    }
+  });
+};
 
 module.exports = class Product {
-  constructor(t) {
-    this.title = t;
+  constructor(title, imageUrl, description, price) {
+    this.title = title;
+    this.imageUrl = imageUrl;
+    this.description = description;
+    this.price = price;
   }
 
   save() {
-    products.push(this);
+    getProductsFromFile((products) => {
+      products.push(this);
+      fs.writeFile(p, JSON.stringify(products), (err) => {
+        console.log(err);
+      });
+    });
   }
 
-  static fetchAll() {
-    return products;
+  static fetchAll(callback) {
+    getProductsFromFile(callback); // I call the function and forward the callback
   }
-
-}
+};
