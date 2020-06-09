@@ -14,7 +14,7 @@ exports.postAddProduct = (req, res, next) => {
   const description = req.body.description;
   const price = req.body.price;
   // create new product object into memory
-  const product = new Product(null, title, imageUrl, description, price); 
+  const product = new Product(null, title, imageUrl, description, price);
   // save/write into database/local array...
   product.save();
   res.redirect("/");
@@ -23,7 +23,8 @@ exports.postAddProduct = (req, res, next) => {
 exports.getEditProduct = (req, res, next) => {
   // return "true" if 'edit' property defined in the query params ?
   const editMode = req.query.edit;
-  if (editMode != "true") { // la query value is a string: edit=true
+  if (editMode != "true") {
+    // la query value is a string: edit=true
     res.redirect("/");
   }
   const prodId = req.params.productId;
@@ -47,13 +48,18 @@ exports.postEditProduct = (req, res, next) => {
   const updatedPrice = req.body.price;
   const updatedImageUrl = req.body.imageUrl;
   const updatedDescription = req.body.description;
-  const updatedProduct = new Product(prodId, updatedTitle, updatedImageUrl, updatedDescription, updatedPrice);
+  const updatedProduct = new Product(
+    prodId,
+    updatedTitle,
+    updatedImageUrl,
+    updatedDescription,
+    updatedPrice
+  );
   // La methode save() vérifie si l'id existe pour crééer nouvel élément ou maj existant, donc pas de doublon
   // Je passe donc un nouveau object, save() fera le reste
   updatedProduct.save();
-  res.redirect('/admin/products');
+  res.redirect("/admin/products");
 };
-
 
 exports.getProducts = (req, res, next) => {
   Product.fetchAll((products) => {
@@ -67,5 +73,6 @@ exports.getProducts = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-
+  Product.deleteById(prodId);
+  res.redirect('/admin/products');
 };

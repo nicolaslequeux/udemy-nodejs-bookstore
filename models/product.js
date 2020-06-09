@@ -1,6 +1,8 @@
 const fs = require("fs"); // to write on the file system
 const path = require("path"); // to construct paths that's work on all OS
 
+const Cart = require("../models/cart");
+
 // global helper constant for the path
 const p = path.join(
   path.dirname(process.mainModule.filename), // root directory
@@ -11,7 +13,8 @@ const p = path.join(
 // helper function to read file
 const getProductsFromFile = (callback) => {
   fs.readFile(p, (err, data) => {
-    if (err) { // if file does not exist for instance, return empty array
+    if (err) {
+      // if file does not exist for instance, return empty array
       // return []; // sans callback fetchAll return undefined as fs.readfile is too slow
       // si j'utilise un return, pas besoin de else car je sorts de la function...
       callback([]);
@@ -51,7 +54,7 @@ module.exports = class Product {
         this.id = Math.random().toString();
         // !!! I know this refers to the class as I use an arrow function (this comes from parent context)!
         // if not arrow function, I will lose the this which refers to something else...
-        products.push(this); 
+        products.push(this);
         fs.writeFile(p, JSON.stringify(products), (err) => {
           console.log(err);
         });
@@ -61,28 +64,16 @@ module.exports = class Product {
 
   static deleteById(id) {
     getProductsFromFile((products) => {
-      const updatedProducts = products.filter(p => p.id !== id);
+      const product = products.find(prod => prod.id === id);
+      const updatedProducts = products.filter((p) => p.id !== id);
       fs.writeFile(p, JSON.stringify(updatedProducts), (err) => {
-
+        if (!err) {
+          Cart.deleteProduct(id, product.price);
+        }
       });
-      callback(product);
     });
-
   }
 
-  // static fetchAll(callback) {
-  //   fs.readFile(p, (err, fileContent) => {
-  //      // sans callback fetchAll return undefined as fs.readfile is too slow
-  //     if (err) {
-  //       // return []; 
-  //       callback([]);
-  //     } else {
-  //       // sans callback fetchAll return undefined as fs.readfile is too slow !!
-  //       // return JSON.parse(fileContent)
-  //       callback(JSON.parse(fileContent));
-  //     }
-  //   });
-  // }
 
   // class method available on the class itself! - Utilisation du helper 'getProductsFromFile'
   static fetchAll(callback) {
