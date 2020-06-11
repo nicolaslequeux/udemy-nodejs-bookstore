@@ -13,12 +13,15 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = req.body.imageUrl;
   const description = req.body.description;
   const price = req.body.price;
-  Product.create({
-    title: title,
-    price: price,
-    imageUrl: imageUrl,
-    description: description,
-  })
+  // 'createProduct' : method created by sequelize from 'User.hasMany(Product)' !
+  // thus both models are connected when created
+  req.user
+    .createProduct({
+      title: title,
+      price: price,
+      imageUrl: imageUrl,
+      description: description,
+    })
     .then((result) => {
       console.log("Created Product");
       res.redirect("/admin/products");
@@ -33,8 +36,18 @@ exports.getEditProduct = (req, res, next) => {
     res.redirect("/");
   }
   const prodId = req.params.productId;
-  Product.findByPk(prodId)
-    .then((product) => {
+  // Solution #1 : all users can edit the product
+  // Product.findByPk(prodId)
+  // .then((product) => {
+  //   if (!product) {
+  //     return res.redirect("/");
+  //   }
+  // Solution #2 : for the user link to the product only
+  req.user
+    .getProducts({ where: { id: prodId } })
+    .then((products) => {
+      // getProducts return an array, even if there is only 1 element
+      const product = products[0];
       if (!product) {
         return res.redirect("/");
       }
@@ -71,7 +84,10 @@ exports.postEditProduct = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.findAll()
+  // Previous solution, before user model
+  // Product.findAll()
+  // Solution #2 : Products from the user
+  req.user.getProducts()
     .then((products) => {
       res.render("admin/products", {
         prods: products,
