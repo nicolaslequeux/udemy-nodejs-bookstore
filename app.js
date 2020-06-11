@@ -12,6 +12,8 @@ const Product = require("./models/product");
 const User = require("./models/user");
 const Cart = require("./models/cart");
 const CartItem = require("./models/cart-item");
+const Order = require("./models/order");
+const OrderItem = require("./models/order-item");
 
 const app = express();
 
@@ -56,11 +58,18 @@ Cart.belongsTo(User); // the first direction was enough... just to understand be
 Cart.belongsToMany(Product, { through: CartItem });
 Product.belongsToMany(Cart, { through: CartItem });
 
+// one to many relationship
+Order.belongsTo(User);
+User.hasMany(Order);
+
+Order.belongsToMany(Product, { through: OrderItem });
+Product.belongsToMany(Order, { through: OrderItem }); // this is the inverse same relationship
+
 // Synch models into the db by creating the appropriate table, and relations if they exist...
 // 'createdAt' and 'updatedAt' will be automatically added by default...
 sequelize
   // 'force: true' not suitable in production has drop tables if new relations added, ok for dev.
-  // .sync({ force: true })
+  //.sync({ force: true })
   .sync()
   .then((result) => {
     // Je recherche if 1 user exits for testing, otherwise create one
@@ -78,6 +87,6 @@ sequelize
     return user.createCart();
   })
   .then((cart) => {
-    app.listen(3000)
+    app.listen(3000);
   })
   .catch((err) => console.log(err));
