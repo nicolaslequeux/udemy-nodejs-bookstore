@@ -1,40 +1,30 @@
-const db = require("../util/database");
+// const Sequelize = require("sequelize");
+const { Sequelize } = require("sequelize");
 
-const Cart = require("../models/cart");
+const sequelize = require("../util/database");
 
-module.exports = class Product {
-  constructor(id, title, imageUrl, description, price) {
-    this.id = id;
-    this.title = title; // create the property title for the class
-    this.imageUrl = imageUrl; // names between argument and property do not need to match
-    this.description = description;
-    this.price = price;
-  }
+// My 'Product' model is not a class anymore, it is a sequelize instance
+// The 'Product' model is singular, but sequelize will create a table pluralized as : 'produtcs'
+const Product = sequelize.define("product", {
+  id: {
+    type: Sequelize.INTEGER,
+    autoIncrement: true,
+    allowNull: false,
+    primaryKey: true,
+  },
+  title: Sequelize.STRING, // shortcut to define a type only
+  price: {
+    type: Sequelize.DOUBLE,
+    allowNull: false,
+  },
+  imageUrl: {
+    type: Sequelize.STRING,
+    allowNull: false,
+  },
+  description: {
+    type: Sequelize.STRING,
+    allowNull: false,
+  },
+});
 
-  save() {
-    return db.execute(
-      "INSERT INTO products (title, price, imageUrl, description) VALUES (?, ?, ?, ?)",
-      [this.title, this.price, this.imageUrl, this.description]
-    );
-  }
-
-  static deleteById(id) {
-    // getProductsFromFile((products) => {
-    //   const product = products.find(prod => prod.id === id);
-    //   const updatedProducts = products.filter((p) => p.id !== id);
-    //   fs.writeFile(p, JSON.stringify(updatedProducts), (err) => {
-    //     if (!err) {
-    //       Cart.deleteProduct(id, product.price);
-    //     }
-    //   });
-    // });
-  }
-
-  static fetchAll(callback) {
-    return db.execute("SELECT * FROM products");
-  }
-
-  static findById(id) {
-    return db.execute("SELECT * FROM products WHERE products.id = ?", [id]);
-  }
-};
+module.exports = Product;

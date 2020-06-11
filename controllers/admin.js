@@ -13,32 +13,39 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = req.body.imageUrl;
   const description = req.body.description;
   const price = req.body.price;
-  const product = new Product(null, title, imageUrl, description, price);
-  product
-    .save()
-    .then(() => {res.redirect("/");})
+  Product.create({
+    title: title,
+    price: price,
+    imageUrl: imageUrl,
+    description: description,
+  })
+    .then((result) => {
+      console.log("Created Product");
+      res.redirect("/admin/products");
+    })
     .catch((err) => console.log(err));
 };
 
 exports.getEditProduct = (req, res, next) => {
-  // return "true" if 'edit' property defined in the query params ?
-  const editMode = req.query.edit;
+  const editMode = req.query.edit; // return "true" if 'edit' property defined in the query params ?
   if (editMode != "true") {
     // la query value is a string: edit=true
     res.redirect("/");
   }
   const prodId = req.params.productId;
-  Product.findById(prodId, (product) => {
-    if (!product) {
-      return res.redirect("/");
-    }
-    res.render("admin/edit-product", {
-      pageTitle: "Edit Product",
-      path: "/admin/edit-product",
-      editing: editMode,
-      product: product,
-    });
-  });
+  Product.findByPk(prodId)
+    .then((product) => {
+      if (!product) {
+        return res.redirect("/");
+      }
+      res.render("admin/edit-product", {
+        pageTitle: "Edit Product",
+        path: "/admin/edit-product",
+        editing: editMode,
+        product: product,
+      });
+    })
+    .catch((err) => console.log(err));
 };
 
 // postEditProduct is a new 'action' which receive (req, res) objects and (next) function
@@ -48,31 +55,53 @@ exports.postEditProduct = (req, res, next) => {
   const updatedPrice = req.body.price;
   const updatedImageUrl = req.body.imageUrl;
   const updatedDescription = req.body.description;
-  const updatedProduct = new Product(
-    prodId,
-    updatedTitle,
-    updatedImageUrl,
-    updatedDescription,
-    updatedPrice
-  );
-  // La methode save() vérifie si l'id existe pour crééer nouvel élément ou maj existant, donc pas de doublon
-  // Je passe donc un nouveau object, save() fera le reste
-  updatedProduct.save();
-  res.redirect("/admin/products");
+  Product.findByPk(prodId)
+    .then((product) => {
+      product.title = updatedTitle;
+      product.price = updatedPrice;
+      product.description = updatedDescription;
+      product.imageUrl = updatedImageUrl;
+      return product.save();
+    })
+    .then((result) => {
+      console.log("UPDATED PRODUCT");
+      res.redirect("/admin/products"); // redirect dans la promises sinon, redirigé trop vite...
+    }) // Applied to the most recent 'return', 'catch' will manage both for errors
+    .catch((err) => console.log(err));
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll((products) => {
-    res.render("admin/products", {
-      prods: products,
-      pageTitle: "Admin Products",
-      path: "/admin/products",
-    });
-  });
+  Product.findAll()
+    .then((products) => {
+      res.render("admin/products", {
+        prods: products,
+        pageTitle: "Admin Products",
+        path: "/admin/products",
+      });
+    })
+    .catch((err) => console.log(err));
 };
 
 exports.postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  Product.deleteById(prodId);
-  res.redirect("/admin/products");
+  // Solution #1
+  // Product.destroy({
+  //   where: {
+  //     id: prodId,
+  //   },
+  // })
+  //   .then(() => res.redirect("/admin/products"))
+  //   .catch((err) => console.log(err));
+  // SOlution #2
+  Product.findByPk(prodId)
+    .then((product) => {
+      // return to attach the 2nd then to control if delete succeeded
+      return product.destroy();
+    })
+    .then((result) => {
+      console.log("DESTROYED PRODUCT");
+      // redirect only if delete succeeded
+      res.redirect("/admin/products");
+    })
+    .catch((err) => console.log(err));
 };
