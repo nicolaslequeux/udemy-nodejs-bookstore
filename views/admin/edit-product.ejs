@@ -31,7 +31,7 @@
 
       <!-- Si en mode editing, je veux récupérer le id que je passe dans le post body -->
       <% if (editing) { %>
-        <input type="hidden" value="<%= product.id %>" name="productId">
+        <input type="hidden" value="<%= product._id %>" name="productId">
       <% } %>
 
       <button class="btn" type="submit"><% if (editing) { %>Update Product<% } else { %>Add Product<% } %></button>
