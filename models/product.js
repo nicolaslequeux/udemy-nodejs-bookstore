@@ -5,7 +5,7 @@ const mongodb = require("mongodb");
 const { getDb } = require("../util/database");
 
 class Product {
-  constructor(title, price, description, imageUrl, id) {
+  constructor(title, price, description, imageUrl, id, userId) {
     this.title = title;
     this.price = price;
     this.description = description;
@@ -13,6 +13,7 @@ class Product {
     // bug: if 'id' argument undefind, 'new mongodb.ObjectID(id)' will not be undefined!
     // last argument = optional
     this._id = id ? new mongodb.ObjectID(id) : null;
+    this.userId = userId;
   }
 
   // Same method to create and and update here

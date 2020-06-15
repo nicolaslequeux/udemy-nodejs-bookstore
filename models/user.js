@@ -1,32 +1,50 @@
-// Require the 'Sequelize' constructor (class)
-const { Sequelize } = require("sequelize");
+// I need mongoDB to get access to the object id type
+const mongodb = require("mongodb");
 
-// import our own sequelize object which hold our connection parameters
-const sequelize = require("../util/database");
+// const getDb =require('../util/database').getDb;
+const { getDb } = require("../util/database");
 
-// My 'User' model is not a class anymore, it is a sequelize instance
-// The 'User' model is singular, but sequelize will create a table pluralized as : 'produtcs'
-const User = sequelize.define("user", {
-  id: {
-    type: Sequelize.INTEGER,
-    autoIncrement: true,
-    allowNull: false,
-    primaryKey: true,
-  },
-  name: Sequelize.STRING,
-  email: Sequelize.STRING,
-  // name: {
-  //   type: Sequelize.STRING,
-  //   allowNull: false,
-  // },
-  // email: {
-  //   type: Sequelize.STRING,
-  //   allowNull: false,
-  //   unique: true,
-  //   validate: {
-  //     isEmail: true,
-  //   },
-  // },
-});
+// I create a reference, I do not call the function
+const ObjectId = mongodb.ObjectID;
+
+class User {
+  constructor(username, email, cart, id) {
+    this.name = username;
+    this.email = email;
+    this.cart = cart; // { items: [] };
+    this._id = id;
+  }
+
+  save() {
+    const db = getDb();
+    return db.collection("users").insertOne(this);
+  }
+
+  // There is a card per client (one-ton-one relation), so with mongodb, no need to create a cart model and db, we can embed the cart on the user model!
+  addToCart(product) {
+
+    const updatedCart = {
+      items: [{ productId: new ObjectId(product._id), quantity: 1 }],
+    };
+    const db = getDb();
+    return db.collection("users").updateOne(
+      { _id: new ObjectId(this._id) },
+      // '$set' receives an object which holds fields to update
+      { $set: { cart: updatedCart } }
+    );
+  }
+
+  static findById(userId) {
+    const db = getDb();
+    return db
+      .collection("users")
+      .findOne({ _id: new ObjectId(userId) })
+      .then((user) => {
+        console.log(user);
+        return user;
+      })
+      .catch((err) => console.log(err));
+  }
+}
 
 module.exports = User;

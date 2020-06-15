@@ -3,9 +3,10 @@ const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
 
-// IMPORT 404 'CONTROLLER' (NO NEED FOR ROUTER HERE)
 const errorController = require("./controllers/error");
 const { mongoConnect } = require("./util/database");
+
+const User = require("./models/user");
 
 const app = express();
 
@@ -21,17 +22,14 @@ const shopRoutes = require("./routes/shop");
 // Are just registered to be executed by incoming requests, thus I can register any middleware before starting sequelize which starts 'app.listen(3000)' and so on...
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
+
 app.use((req, res, next) => {
-  // User.findByPk(1)
-  //   .then((user) => {
-  //     // req is an object where I can add new field as long I not overright existing ones as 'body'
-  //     // user is not a simple JS object it is a sequelize object with all sequelize methods!
-  //     // it means I can use destroy method on user
-  //     req.user = user;
-  //     next();
-  //   })
-  //   .catch((err) => console.log(err));
-  next();
+  User.findById("5ee7255209f7aefd8ea97634")
+    .then((user) => {
+      req.user = new User(user.name, user.email, user.cart, user._id);
+      next();
+    })
+    .catch((err) => console.log(err));
 });
 
 // PASSING ROUTES
