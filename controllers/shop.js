@@ -1,7 +1,22 @@
 const Product = require("../models/product");
 
+exports.getIndex = (req, res, next) => {
+  // 'Product' is a Mongoose model and Mongose provides a 'find()' method, no need to create this method in the model!
+  Product.find()
+    .then((products) => {
+      res.render("shop/index", {
+        prods: products,
+        pageTitle: "Shop",
+        path: "/",
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+};
+
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
+  Product.find()
     .then((products) => {
       res.render("shop/product-list", {
         prods: products,
@@ -16,26 +31,13 @@ exports.getProducts = (req, res, next) => {
 
 exports.getProduct = (req, res, next) => {
   const prodId = req.params.productId;
+  // the findById of Mongoose also convert mongoDB '_id' to ObjectID  for us !
   Product.findById(prodId)
     .then((product) => {
       res.render("shop/product-detail", {
         product: product,
         pageTitle: "Shop - " + product.title,
         path: "/products",
-      });
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-};
-
-exports.getIndex = (req, res, next) => {
-  Product.fetchAll()
-    .then((products) => {
-      res.render("shop/index", {
-        prods: products,
-        pageTitle: "Shop",
-        path: "/",
       });
     })
     .catch((err) => {

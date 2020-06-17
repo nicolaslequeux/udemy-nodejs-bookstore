@@ -1,6 +1,20 @@
-const mongodb = require("mongodb");
-
 const Product = require("../models/product");
+
+exports.getProducts = (req, res, next) => {
+  Product.find()
+    // mongoose method to select/exclude field
+    // .select('title price -_id')
+    // mongoose method to populate from referenced object/related fields (here user model)
+    // .populate('userId', 'name')
+    .then((products) => {
+      res.render("admin/products", {
+        prods: products,
+        pageTitle: "Admin Products",
+        path: "/admin/products",
+      });
+    })
+    .catch((err) => console.log(err));
+};
 
 exports.getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
@@ -15,31 +29,23 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = req.body.imageUrl;
   const description = req.body.description;
   const price = req.body.price;
-  const product = new Product(
-    title,
-    price,
-    description,
-    imageUrl,
-    null,
-    req.user._id
-  );
+  // as it is a js object, orders of properties does not matters
+  // left keys : defined in the schema
+  // right side : data received from the controller action
+  const product = new Product({
+    title: title,
+    price: price,
+    description: description,
+    imageUrl: imageUrl,
+    // v1 : userId: req.user._id
+    // v2 : Mongoose retrives automaticaly the id for the object
+    userId: req.user
+  });
   product
     .save()
     .then((result) => {
       console.log("Created Product");
       res.redirect("/admin/products");
-    })
-    .catch((err) => console.log(err));
-};
-
-exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
-    .then((products) => {
-      res.render("admin/products", {
-        prods: products,
-        pageTitle: "Admin Products",
-        path: "/admin/products",
-      });
     })
     .catch((err) => console.log(err));
 };
@@ -72,15 +78,14 @@ exports.postEditProduct = (req, res, next) => {
   const updatedPrice = req.body.price;
   const updatedDescription = req.body.description;
   const updatedImageUrl = req.body.imageUrl;
-  const product = new Product(
-    updatedTitle,
-    updatedPrice,
-    updatedDescription,
-    updatedImageUrl,
-    prodId // le controlleur transforme la string en mgdb objectId
-  );
-  product
-    .save()
+  Product.findById(prodId)
+    .then((product) => {
+      product.title = updatedTitle;
+      product.price = updatedPrice;
+      product.description = updatedDescription;
+      product.imageUrl = updatedImageUrl;
+      return product.save();
+    })
     .then((result) => {
       console.log("UPDATED PRODUCT");
       res.redirect("/admin/products"); // redirect dans la promises sinon, redirigé trop vite...
@@ -90,7 +95,7 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  Product.deleteById(prodId)
+  Product.findByIdAndRemove(prodId)
     .then(() => {
       console.log("DESTROYED PRODUCT");
       res.redirect("/admin/products");
