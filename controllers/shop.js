@@ -1,4 +1,5 @@
 const Product = require("../models/product");
+const Order = require("../models/order");
 
 exports.getIndex = (req, res, next) => {
   // 'Product' is a Mongoose model and Mongose provides a 'find()' method, no need to create this method in the model!
@@ -47,8 +48,10 @@ exports.getProduct = (req, res, next) => {
 
 exports.getCart = (req, res, next) => {
   req.user
-    .getCart()
-    .then((products) => {
+    .populate("cart.items.productId")
+    .execPopulate()
+    .then((user) => {
+      const products = user.cart.items;
       res.render("shop/cart", {
         pageTitle: "Your Cart",
         path: "/cart",
@@ -65,7 +68,6 @@ exports.postCart = (req, res, next) => {
       return req.user.addToCart(product);
     })
     .then((result) => {
-      // console.log(result);
       res.redirect("/cart");
     });
 };
@@ -73,7 +75,7 @@ exports.postCart = (req, res, next) => {
 exports.postCartDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
   req.user
-    .deleteItemFromCart(prodId)
+    .removeFromCart(prodId)
     .then((result) => {
       res.redirect("/cart");
     })
@@ -81,18 +83,34 @@ exports.postCartDeleteProduct = (req, res, next) => {
 };
 
 exports.postOrder = (req, res, next) => {
-  let fetchedCart;
   req.user
-    .addOrder()
+    .populate("cart.items.productId")
+    .execPopulate()
+    .then((user) => {
+      const products = user.cart.items.map((i) => {
+        // '._doc' method provided by mongoose
+        return { quantity: i.quantity, product: { ...i.productId._doc } };
+      });
+      const order = new Order({
+        user: {
+          name: req.user.name,
+          userId: req.user, // mongoose will pick the id from the entire user object
+        },
+        products: products,
+      });
+      order.save();
+    })
     .then((result) => {
+      return req.user.clearCart();
+    })
+    .then(() => {
       res.redirect("/orders");
     })
     .catch((err) => console.log(err));
 };
 
 exports.getOrders = (req, res, next) => {
-  req.user
-    .getOrders()
+  Order.find({ "user.userId": req.user._id })
     .then((orders) => {
       res.render("shop/orders", {
         pageTitle: "Your Orders",
@@ -102,10 +120,3 @@ exports.getOrders = (req, res, next) => {
     })
     .catch((err) => console.log(err));
 };
-
-// // exports.getCheckout = (req, res, next) => {
-// //   res.render("shop/checkout", {
-// //     pageTitle: "Checkout",
-// //     path: "/checkout",
-// //   });
-// // };
