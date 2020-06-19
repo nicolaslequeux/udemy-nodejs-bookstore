@@ -16,6 +16,7 @@ app.set("views", "./views");
 // IMPORT ROUTES
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
+const authRoutes = require("./routes/auth");
 
 // MIDDLEWARES
 // Are just registered to be executed by incoming requests, thus I can register any middleware before starting sequelize which starts 'app.listen(3000)' and so on...
@@ -36,6 +37,7 @@ app.use((req, res, next) => {
 // PASSING ROUTES
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
+app.use(authRoutes);
 
 app.use(errorController.get404);
 

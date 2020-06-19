@@ -1,11 +1,8 @@
-const path = require("path");
-
 const express = require("express");
+const router = express.Router();
 
 // productsController bundles all exported functions
 const adminController = require("../controllers/admin");
-
-const router = express.Router();
 
 // /admin/add-product => GET
 router.get("/add-product", adminController.getAddProduct);
