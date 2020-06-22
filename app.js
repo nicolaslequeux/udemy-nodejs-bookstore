@@ -67,18 +67,18 @@ mongoose
   .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then((result) => {
     // I create my first user before starting listening, no need to recreate it if exists
-    User.findOne().then((user) => {
-      if (!user) {
-        const user = new User({
-          name: "Nicolas",
-          email: "test@test.com",
-          cart: {
-            items: [],
-          },
-        });
-        user.save();
-      }
-    });
+    // User.findOne().then((user) => {
+    //   if (!user) {
+    //     const user = new User({
+    //       name: "Nicolas",
+    //       email: "test@test.com",
+    //       cart: {
+    //         items: [],
+    //       },
+    //     });
+    //     user.save();
+    //   }
+    // });
     app.listen(3000);
   })
   .catch((err) => {
