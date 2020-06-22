@@ -3,11 +3,20 @@ const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const session = require("express-session");
+const MongoDBStore = require("connect-mongodb-session")(session);
 
 const errorController = require("./controllers/error");
 const User = require("./models/user");
 
+const MONGODB_URI =
+  "mongodb+srv://nico-test:nico123test@nodejs-bookstore-qqnku.mongodb.net/shop";
+
 const app = express();
+const store = new MongoDBStore({
+  uri: MONGODB_URI,
+  collection: "sessions",
+});
 
 // TEMPLATING ENGINE
 app.set("view engine", "ejs");
@@ -22,10 +31,22 @@ const authRoutes = require("./routes/auth");
 // Are just registered to be executed by incoming requests, thus I can register any middleware before starting sequelize which starts 'app.listen(3000)' and so on...
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
+// Initialization session middleware
+app.use(
+  session({
+    secret: "my seceret",
+    resave: "false",
+    saveUninitialized: false,
+    store: store,
+  })
+);
 
-// Middleware used as an helper to pass user id manually for development mode
+// Middleware helper to pass user
 app.use((req, res, next) => {
-  User.findById("5ee9de40a10381fe470e4367")
+  if (!req.session.user) {
+    return next();
+  }
+  User.findById(req.session.user._id)
     .then((user) => {
       // I store the full mongoose user model in my request, thus I can use mongoose methods on it
       req.user = user;
@@ -43,10 +64,7 @@ app.use(errorController.get404);
 
 // mongoose connection - node need of a database utility file, all is managed by mongoose!
 mongoose
-  .connect(
-    "mongodb+srv://nico-test:nico123test@nodejs-bookstore-qqnku.mongodb.net/shop?retryWrites=true",
-    { useNewUrlParser: true, useUnifiedTopology: true }
-  )
+  .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then((result) => {
     // I create my first user before starting listening, no need to recreate it if exists
     User.findOne().then((user) => {

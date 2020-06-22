@@ -29,7 +29,9 @@
                     <a href="/products/<%= product._id %>" class="btn">Details</a>
 
                     <!-- AN INCLUDE INTO A LOOP DOES NOT GET ALL LOCAL VAIABLES BY DEFAULT, THUS I HAVE TO PASS THEM -->
-                    <%- include('../includes/add-to-cart.ejs', { product: product }) %>
+                    <% if (isAuthenticated) { %>
+                        <%- include('../includes/add-to-cart.ejs', { product: product }) %>
+                    <% } %>
 
                 </div>
             </article>
