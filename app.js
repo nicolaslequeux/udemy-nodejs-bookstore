@@ -15,6 +15,7 @@ const MONGODB_URI =
   "mongodb+srv://nico-test:nico123test@nodejs-bookstore-qqnku.mongodb.net/shop";
 
 const app = express();
+
 const store = new MongoDBStore({
   uri: MONGODB_URI,
   collection: "sessions",
@@ -49,6 +50,7 @@ app.use(
 // I can add 'csrf' after I have initialized the 'session' that csfr will use to store tokens
 app.use(csrfProtection);
 
+// after session initialization as it needs session
 app.use(flash());
 
 // Middleware helper to extract/pass user

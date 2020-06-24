@@ -11,6 +11,9 @@ const userSchema = new Schema({
     type: String,
     required: true
   },
+  // for reset password
+  resetToken: String,
+  resetTokenExpiration: Date,
   // version 'embeded document'
   cart: {
     items: [
