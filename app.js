@@ -5,6 +5,8 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
+const csrf = require("csurf");
+const flash = require("connect-flash");
 
 const errorController = require("./controllers/error");
 const User = require("./models/user");
@@ -17,6 +19,10 @@ const store = new MongoDBStore({
   uri: MONGODB_URI,
   collection: "sessions",
 });
+
+// By default the csrf token is saved into the session
+const csrfProtection = csrf();
+
 
 // TEMPLATING ENGINE
 app.set("view engine", "ejs");
@@ -40,8 +46,12 @@ app.use(
     store: store,
   })
 );
+// I can add 'csrf' after I have initialized the 'session' that csfr will use to store tokens
+app.use(csrfProtection);
 
-// Middleware helper to pass user
+app.use(flash());
+
+// Middleware helper to extract/pass user
 app.use((req, res, next) => {
   if (!req.session.user) {
     return next();
@@ -53,6 +63,15 @@ app.use((req, res, next) => {
       next();
     })
     .catch((err) => console.log(err));
+});
+
+app.use((req, res, next) => {
+  // ExpressJS : I define local variables wich will be passed to the views
+  // I can move the isAuthenticated property from controller to app.js
+  res.locals.isAuthenticated = req.session.isLoggedIn;
+  // 'csrfToken' method is provided by the csrf midlleware we added
+  res.locals.csrfToken = req.csrfToken();
+  next();
 });
 
 // PASSING ROUTES

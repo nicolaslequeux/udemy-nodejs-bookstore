@@ -1,6 +1,7 @@
 <form action="/cart" method="POST">
   <!-- input hidden as only used to populate de POST body, so encoded in the request sent -->
   <!-- because I am not using a GET, I cannot use the url to pass data (no dynamic segment) -->
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <input type="hidden" name="productId" value="<%= product._id %>">
   <button class="btn" type="submit">Add to cart</button>
 </form>
