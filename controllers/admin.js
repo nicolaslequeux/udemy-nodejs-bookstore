@@ -1,7 +1,7 @@
 const Product = require("../models/product");
 
 exports.getProducts = (req, res, next) => {
-  Product.find()
+  Product.find({ userId: req.user._id }) // filter to find only products created by the user
     // mongoose method to select/exclude field
     // .select('title price -_id')
     // mongoose method to populate from referenced object/related fields (here user model)
@@ -19,7 +19,7 @@ exports.getProducts = (req, res, next) => {
 exports.getAddProduct = (req, res, next) => {
   // Methode basic pour protéger une route.... but cumbersome!
   if (!req.session.isLoggedIn) {
-    return res.redirect('/login');
+    return res.redirect("/login");
   }
   res.render("admin/edit-product", {
     pageTitle: "Add Product",
@@ -43,7 +43,7 @@ exports.postAddProduct = (req, res, next) => {
     imageUrl: imageUrl,
     // v1 : userId: req.user._id
     // v2 : Mongoose retrives automaticaly the id for the object
-    userId: req.user
+    userId: req.user,
   });
   product
     .save()
@@ -82,24 +82,30 @@ exports.postEditProduct = (req, res, next) => {
   const updatedPrice = req.body.price;
   const updatedDescription = req.body.description;
   const updatedImageUrl = req.body.imageUrl;
+
   Product.findById(prodId)
     .then((product) => {
+      // qlq essaie de forcer une url sans l'accès
+      if (product.userId.toString() !== req.user._id.toString()) {
+        return res.redirect("/");
+      }
       product.title = updatedTitle;
       product.price = updatedPrice;
       product.description = updatedDescription;
       product.imageUrl = updatedImageUrl;
-      return product.save();
+      return product.save().then((result) => {
+        console.log("UPDATED PRODUCT");
+        res.redirect("/admin/products"); // redirect dans la promises sinon, redirigé trop vite...
+      });
     })
-    .then((result) => {
-      console.log("UPDATED PRODUCT");
-      res.redirect("/admin/products"); // redirect dans la promises sinon, redirigé trop vite...
-    }) // Applied to the most recent 'return', 'catch' will manage both for errors
+    // Applied to the most recent 'return', 'catch' will manage both for errors
     .catch((err) => console.log(err));
 };
 
 exports.postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  Product.findByIdAndRemove(prodId)
+  // Product.findByIdAndRemove(prodId); // version 1 : any user can delete any product
+  Product.deleteOne({ _id: prodId, userId: req.user._id }) // version 2 : only owner can delete its product
     .then(() => {
       console.log("DESTROYED PRODUCT");
       res.redirect("/admin/products");

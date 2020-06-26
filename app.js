@@ -2,10 +2,15 @@ const path = require("path");
 
 const express = require("express");
 const bodyParser = require("body-parser");
+// object modeling for mongodb
 const mongoose = require("mongoose");
+// create session object store on server side (instead of cookie)
 const session = require("express-session");
+// store the session on a mongoDB
 const MongoDBStore = require("connect-mongodb-session")(session);
+// manage csrf attack, stored on session object (need session)
 const csrf = require("csurf");
+// manage flash messages stored on session (need a session module)
 const flash = require("connect-flash");
 
 const errorController = require("./controllers/error");
@@ -16,14 +21,17 @@ const MONGODB_URI =
 
 const app = express();
 
-const store = new MongoDBStore({
-  uri: MONGODB_URI,
-  collection: "sessions",
-});
+// constructor to create a 'store' (or any other name) to store session infos on mongoDB
+const store = new MongoDBStore(
+  // passing options to the constructor
+  {
+    uri: MONGODB_URI,
+    collection: "sessions",
+  }
+);
 
 // By default the csrf token is saved into the session
 const csrfProtection = csrf();
-
 
 // TEMPLATING ENGINE
 app.set("view engine", "ejs");
@@ -37,11 +45,16 @@ const authRoutes = require("./routes/auth");
 // MIDDLEWARES
 // Are just registered to be executed by incoming requests, thus I can register any middleware before starting sequelize which starts 'app.listen(3000)' and so on...
 app.use(bodyParser.urlencoded({ extended: false }));
+
+// public path available at the !root of the project to store css... 'public' is a convention with nodeJS
 app.use(express.static(path.join(__dirname, "public")));
-// Initialization session middleware
+
+// Initialization session middleware from 'express-session' package
+// this 'session' object will be available on all 'req' and stored on server side session not cookies
 app.use(
   session({
-    secret: "my seceret",
+    secret:
+      "my seceret", //should be a long string value in production (used to hash the cookie on browser side)
     resave: "false",
     saveUninitialized: false,
     store: store,
@@ -55,12 +68,14 @@ app.use(flash());
 
 // Middleware helper to extract/pass user
 app.use((req, res, next) => {
+  // if no user defined into session, exit the function
   if (!req.session.user) {
     return next();
   }
+  // if user defined (from auth controller postLogin), then fetch the DB
   User.findById(req.session.user._id)
     .then((user) => {
-      // I store the full mongoose user model in my request, thus I can use mongoose methods on it
+      // I store the full mongoose user model in my request, thus I can use mongoose methods on it on any req
       req.user = user;
       next();
     })
@@ -76,7 +91,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// PASSING ROUTES
+// PASSING ROUTES !!!! AFTER THE MIDDELWARES !!!!
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
@@ -87,19 +102,6 @@ app.use(errorController.get404);
 mongoose
   .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then((result) => {
-    // I create my first user before starting listening, no need to recreate it if exists
-    // User.findOne().then((user) => {
-    //   if (!user) {
-    //     const user = new User({
-    //       name: "Nicolas",
-    //       email: "test@test.com",
-    //       cart: {
-    //         items: [],
-    //       },
-    //     });
-    //     user.save();
-    //   }
-    // });
     app.listen(3000);
   })
   .catch((err) => {

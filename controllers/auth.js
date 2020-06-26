@@ -1,7 +1,9 @@
 const crypto = require("crypto");
 
 const bcrypt = require("bcryptjs");
+// sedning email from node
 const nodemailer = require("nodemailer");
+// email service
 const sendgridTransport = require("nodemailer-sendgrid-transport"); // green = function
 
 const User = require("../models/user");
@@ -24,7 +26,6 @@ const transporter = nodemailer.createTransport({
 });
 
 exports.getLogin = (req, res, next) => {
-  //const isLoggedIn = req.get("Cookie").split(";")[1].trim().split("=")[1] == 'true';
   let message = req.flash("error");
   if (message.length > 0) {
     message = message[0];
