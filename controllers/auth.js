@@ -5,6 +5,8 @@ const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 // email service
 const sendgridTransport = require("nodemailer-sendgrid-transport"); // green = function
+// validationResult gathers all results from validation error on the route
+const { validationResult } = require("express-validator");
 
 const User = require("../models/user");
 
@@ -36,26 +38,33 @@ exports.getLogin = (req, res, next) => {
     pageTitle: "Login",
     path: "/login",
     errorMessage: message,
-  });
-};
-
-exports.getSignup = (req, res, next) => {
-  let message = req.flash("error");
-  if (message.length > 0) {
-    message = message[0];
-  } else {
-    message = null;
-  }
-  res.render("auth/signup", {
-    path: "/signup",
-    pageTitle: "Signup",
-    errorMessage: message,
+    oldInput: {
+      email: null,
+      password: null,
+    },
+    validationErrors: [],
   });
 };
 
 exports.postLogin = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
+  // Gather all msg errors from validator package
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    // I use return thus following code 'User.fondOne()' will not execute
+    return res.status(422).render("auth/login", {
+      pageTitle: "Login",
+      path: "/login",
+      // return msg defined into route validator instead of previous version
+      errorMessage: errors.array()[0].msg,
+      oldInput: {
+        email: email,
+        password: password,
+      },
+      validationErrors: errors.array(),
+    });
+  }
   User.findOne({ email: email })
     .then((user) => {
       if (!user) {
@@ -88,39 +97,66 @@ exports.postLogin = (req, res, next) => {
     .catch((err) => console.log(err));
 };
 
+exports.getSignup = (req, res, next) => {
+  let message = req.flash("error");
+  if (message.length > 0) {
+    message = message[0];
+  } else {
+    message = null;
+  }
+  res.render("auth/signup", {
+    path: "/signup",
+    pageTitle: "Signup",
+    errorMessage: message,
+    oldInput: {
+      email: null,
+      password: null,
+      confirmPassword: null,
+    },
+    // if I want to use all message from validators in my view, I have to pass them
+    validationErrors: [],
+  });
+};
+
 exports.postSignup = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
-  const confirmPassword = req.body.confirmPassword;
-  User.findOne({ email: email })
-    .then((userDoc) => {
-      if (userDoc) {
-        // ! PS : the 'return' ends the function execution, but the chained '.then' is then executed... this is how promises work
-        // Also if I chain before redirecting, the stack of emails to be send will slow down the app!
-        req.flash("error", "Email exists already");
-        return res.redirect("/signup");
-      }
-      return bcrypt
-        .hash(password, 12)
-        .then((hashedPassword) => {
-          const user = new User({
-            email: email,
-            password: hashedPassword,
-            cart: { items: [] },
-          });
-          return user.save();
-        })
-        .then((result) => {
-          res.redirect("/login");
-          // transporter.sendMail returns a Promises... but no need to wait for email sending to be completed to return in this case
-          return transporter.sendMail({
-            to: email,
-            from: "contact@nicolaslequeux.com",
-            subject: "Signup completed!",
-            html: "<h1>You successfully signed up!</h1>",
-          });
-        })
-        .catch((err) => console.log(err));
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    //console.log(errors.array())
+    return res.status(422).render("auth/signup", {
+      path: "/signup",
+      pageTitle: "Signup",
+      errorMessage: errors.array()[0].msg,
+      oldInput: {
+        email: email,
+        password: password,
+        confirmPassword: req.body.confirmPassword,
+      },
+      validationErrors: errors.array(),
+    });
+  }
+
+  // No more need to check if email already exists as done by the valida
+  bcrypt
+    .hash(password, 12)
+    .then((hashedPassword) => {
+      const user = new User({
+        email: email,
+        password: hashedPassword,
+        cart: { items: [] },
+      });
+      return user.save();
+    })
+    .then((result) => {
+      res.redirect("/login");
+      // transporter.sendMail returns a Promises... but no need to wait for email sending to be completed to return in this case
+      return transporter.sendMail({
+        to: email,
+        from: "contact@nicolaslequeux.com",
+        subject: "Signup completed!",
+        html: "<h1>You successfully signed up!</h1>",
+      });
     })
     .catch((err) => console.log(err));
 };
