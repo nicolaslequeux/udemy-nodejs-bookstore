@@ -17,7 +17,13 @@ exports.getProducts = (req, res, next) => {
         path: "/admin/products",
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      // console.log(err);
+      // res.redirect("/500");
+      const error = new Error("err");
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.getAddProduct = (req, res, next) => {
@@ -74,7 +80,33 @@ exports.postAddProduct = (req, res, next) => {
       console.log("Created Product");
       res.redirect("/admin/products");
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      // SOLUTION 1 : FOR ERROR HANDLING... DATABASE TEMPORY ISSUE HERE
+      // return res.status(500).render("admin/edit-product", {
+      //   pageTitle: "Add Product",
+      //   path: "/admin/add-product",
+      //   editing: false,
+      //   hasError: true,
+      //   product: {
+      //     title: title,
+      //     imageUrl: imageUrl,
+      //     price: price,
+      //     description: description,
+      //   },
+      //   // I just show the first [0] that I ma guarantee to have... (at least)
+      //   errorMessage: "Database operation failed, please try again.",
+      //   validationErrors: [], // in this case I dont want to put a red border around anything
+      // });
+
+      // SOLUTION 2 : REDIRECT ON AN ERROR HANDLING PAGE
+      // res.redirect("/500");
+
+      // SOLUTION 3 : I pass an error object to a central error managing middleware
+      const error = new Error("Creating a product failed!");
+      error.httpStatusCode = 500;
+      // with error passed in next(), Express skips other middlewares and goes to the error middleware
+      return next(error);
+    });
 };
 
 exports.getEditProduct = (req, res, next) => {
@@ -85,6 +117,7 @@ exports.getEditProduct = (req, res, next) => {
   const prodId = req.params.productId;
   Product.findById(prodId)
     .then((product) => {
+      // throw new Error('Dummy error') // Example of error to test error middleware
       if (!product) {
         return res.redirect("/");
       }
@@ -98,7 +131,13 @@ exports.getEditProduct = (req, res, next) => {
         validationErrors: [],
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      // console.log(err);
+      // res.redirect("/500");
+      const error = new Error("err");
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 // postEditProduct is a new 'action' which receive (req, res) objects and (next) function
@@ -108,13 +147,12 @@ exports.postEditProduct = (req, res, next) => {
   const updatedPrice = req.body.price;
   const updatedDescription = req.body.description;
   const updatedImageUrl = req.body.imageUrl;
-
   const errors = validationResult(req); // I collect my errors
   if (!errors.isEmpty()) {
     // I use 'return' thus following code will not execute
     return res.status(422).render("admin/edit-product", {
       pageTitle: "Edit Product",
-      path: "/admin/edit-product",
+      path: "/admin/add-product",
       editing: true,
       hasError: true,
       product: {
@@ -146,7 +184,13 @@ exports.postEditProduct = (req, res, next) => {
       });
     })
     // Applied to the most recent 'return', 'catch' will manage both for errors
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      // console.log(err);
+      // res.redirect("/500");
+      const error = new Error("err");
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.postDeleteProduct = (req, res, next) => {
@@ -157,5 +201,11 @@ exports.postDeleteProduct = (req, res, next) => {
       console.log("DESTROYED PRODUCT");
       res.redirect("/admin/products");
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      // console.log(err);
+      // res.redirect("/500");
+      const error = new Error("err");
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
