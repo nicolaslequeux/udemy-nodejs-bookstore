@@ -28,9 +28,9 @@ exports.getProducts = (req, res, next) => {
 
 exports.getAddProduct = (req, res, next) => {
   // Methode basic pour protéger une route.... but cumbersome!
-  if (!req.session.isLoggedIn) {
-    return res.redirect("/login");
-  }
+  // if (!req.session.isLoggedIn) {
+  //   return res.redirect("/login");
+  // }
   res.render("admin/edit-product", {
     pageTitle: "Add Product",
     path: "/admin/add-product",
@@ -43,10 +43,30 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = (req, res, next) => {
   const title = req.body.title;
-  const imageUrl = req.body.imageUrl;
+  const image = req.file;
   const description = req.body.description;
   const price = req.body.price;
+  if (!image) {
+    return res.status(422).render("admin/edit-product", {
+      pageTitle: "Add Product",
+      path: "/admin/edit-product",
+      editing: false,
+      hasError: true,
+      product: {
+        title: title,
+        price: price,
+        description: description,
+      },
+      errorMessage: 'Attached file is not an image',
+      validationErrors: [],
+    });
+  }
+
+  // on the image object (from multer middleware) I can access the path and then store that path into the database, then file can stay on the file system of the server
+  const imageUrl = image.path;
+
   const errors = validationResult(req); // I collect my errors
+  
   if (!errors.isEmpty()) {
     // I use 'return' thus following code will not execute
     return res.status(422).render("admin/edit-product", {
@@ -56,7 +76,6 @@ exports.postAddProduct = (req, res, next) => {
       hasError: true,
       product: {
         title: title,
-        imageUrl: imageUrl,
         price: price,
         description: description,
       },
@@ -146,7 +165,8 @@ exports.postEditProduct = (req, res, next) => {
   const updatedTitle = req.body.title;
   const updatedPrice = req.body.price;
   const updatedDescription = req.body.description;
-  const updatedImageUrl = req.body.imageUrl;
+  // const updatedImageUrl = req.body.imageUrl;
+  const image = req.file;
   const errors = validationResult(req); // I collect my errors
   if (!errors.isEmpty()) {
     // I use 'return' thus following code will not execute
@@ -157,7 +177,7 @@ exports.postEditProduct = (req, res, next) => {
       hasError: true,
       product: {
         title: updatedTitle,
-        imageUrl: updatedImageUrl,
+        // imageUrl: updatedImageUrl,
         price: updatedPrice,
         description: updatedDescription,
         _id: prodId,
@@ -177,7 +197,10 @@ exports.postEditProduct = (req, res, next) => {
       product.title = updatedTitle;
       product.price = updatedPrice;
       product.description = updatedDescription;
-      product.imageUrl = updatedImageUrl;
+      // product.imageUrl = updatedImageUrl;
+      if (image) {
+        product.imageUrl = image.path;
+      }
       return product.save().then((result) => {
         console.log("UPDATED PRODUCT");
         res.redirect("/admin/products"); // redirect dans la promises sinon, redirigé trop vite...

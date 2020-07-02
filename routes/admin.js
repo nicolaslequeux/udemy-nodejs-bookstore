@@ -1,5 +1,4 @@
 const express = require("express");
-const router = express.Router();
 
 // Destructuring the 'check' sub-package from 'express-validator'
 // To pull-out property names from the object I get back
@@ -10,9 +9,14 @@ const { body } = require("express-validator");
 const adminController = require("../controllers/admin");
 const isAuth = require("../middleware/is-auth");
 
+const router = express.Router();
+
 // /admin/add-product => GET
 // We can add as many handlers we want to 'get' they will be parsed form left to right
 router.get("/add-product", isAuth, adminController.getAddProduct);
+
+// /admin/products => GET
+router.get("/products", isAuth, adminController.getProducts);
 
 // /admin/add-product => POST
 router.post(
@@ -22,7 +26,7 @@ router.post(
       .isString()
       .isLength({ min: 3, max: 50 })
       .trim(),
-    body("imageUrl", "Image URL is not valid").isURL(),
+    // body("imageUrl", "Image URL is not valid").isURL(),
     body("price", "Price is not valid").isFloat(),
     body("description", "Description is too short or too long")
       .isLength({ min: 5, max: 400 })
@@ -31,9 +35,6 @@ router.post(
   isAuth,
   adminController.postAddProduct
 );
-
-// /admin/products => GET
-router.get("/products", isAuth, adminController.getProducts);
 
 // dynamic path segment
 router.get("/edit-product/:productId", isAuth, adminController.getEditProduct);
@@ -45,7 +46,7 @@ router.post(
       .isString()
       .isLength({ min: 3, max: 50 })
       .trim(),
-    body("imageUrl", "Image URL is not valid").isURL(),
+    // body("imageUrl", "Image URL is not valid").isURL(),
     body("price", "Price is not valid").isFloat(),
     body("description", "Description is too short or too long")
       .isLength({ min: 5, max: 400 })

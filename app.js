@@ -2,6 +2,7 @@ const path = require("path");
 
 const express = require("express");
 const bodyParser = require("body-parser");
+const multer = require("multer");
 // object modeling for mongodb
 const mongoose = require("mongoose");
 // create session object store on server side (instead of cookie)
@@ -33,6 +34,29 @@ const store = new MongoDBStore(
 // By default the csrf token is saved into the session
 const csrfProtection = csrf();
 
+// Configuration object for multer (file body parser)
+const fileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "images");
+  },
+  filename: (req, file, cb) => {
+    cb(null, new Date().toISOString() + "-" + file.originalname);
+  },
+});
+
+// Helper for multer to filter file type
+const fileFilter = (req, file, cb) => {
+  if (
+    file.mimetype === "image/png" ||
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image/jpeg"
+  ) {
+    cb(null, true); // I accept the file
+  } else {
+    cb(null, false); // otherwise I refuse it
+  }
+};
+
 // TEMPLATING ENGINE
 app.set("view engine", "ejs");
 app.set("views", "./views");
@@ -46,8 +70,14 @@ const authRoutes = require("./routes/auth");
 // Are just registered to be executed by incoming requests, thus I can register any middleware before starting sequelize which starts 'app.listen(3000)' and so on...
 app.use(bodyParser.urlencoded({ extended: false }));
 
+// I definie the name of the input value 'image' which will hold the file that Multer will be looking for, then the folder to store data
+app.use(
+  multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
+);
+
 // public path available at the !root of the project to store css... 'public' is a convention with nodeJS
 app.use(express.static(path.join(__dirname, "public")));
+app.use('/images', express.static(path.join(__dirname, "images")));
 
 // Initialization session middleware from 'express-session' package
 // this 'session' object will be available on all 'req' and stored on server side session not cookies
@@ -113,6 +143,7 @@ app.use(errorController.get404);
 app.use((error, req, res, next) => {
   // res.status(error.httpStatusCode).render(...);
   //res.redirect("/500");
+  console.log("req.session.isLoggedIn: ", req.session.isLoggedIn);
   res.status(500).render("500", {
     pageTitle: "Error!",
     path: "/500",
