@@ -1,6 +1,8 @@
 // validationResult collects all results from validation error on the route
 const { validationResult } = require("express-validator");
 
+const fileHelper = require("../util/file");
+
 const Product = require("../models/product");
 const product = require("../models/product");
 
@@ -57,7 +59,7 @@ exports.postAddProduct = (req, res, next) => {
         price: price,
         description: description,
       },
-      errorMessage: 'Attached file is not an image',
+      errorMessage: "Attached file is not an image",
       validationErrors: [],
     });
   }
@@ -66,7 +68,7 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = image.path;
 
   const errors = validationResult(req); // I collect my errors
-  
+
   if (!errors.isEmpty()) {
     // I use 'return' thus following code will not execute
     return res.status(422).render("admin/edit-product", {
@@ -199,6 +201,8 @@ exports.postEditProduct = (req, res, next) => {
       product.description = updatedDescription;
       // product.imageUrl = updatedImageUrl;
       if (image) {
+        // helper to delete previous file from file system (as I get a new one)
+        fileHelper.deleteFile(product.imageUrl);
         product.imageUrl = image.path;
       }
       return product.save().then((result) => {
@@ -218,8 +222,15 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  // Product.findByIdAndRemove(prodId); // version 1 : any user can delete any product
-  Product.deleteOne({ _id: prodId, userId: req.user._id }) // version 2 : only owner can delete its product
+  Product.findById(prodId)
+    .then((product) => {
+      if (!product) {
+        return next(new Error("Product not found"));
+      }
+      // helper to delete previous file from file system (as I get a new one)
+      fileHelper.deleteFile(product.imageUrl);
+      return Product.deleteOne({ _id: prodId, userId: req.user._id });
+    })
     .then(() => {
       console.log("DESTROYED PRODUCT");
       res.redirect("/admin/products");

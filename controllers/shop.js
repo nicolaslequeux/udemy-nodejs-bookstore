@@ -1,3 +1,9 @@
+const fs = require("fs");
+const path = require("path");
+
+// I name it PDFDocument as pdfkit exposes a PDFDocument constructor
+const PDFDocument = require("pdfkit");
+
 const Product = require("../models/product");
 const Order = require("../models/order");
 
@@ -167,4 +173,88 @@ exports.getOrders = (req, res, next) => {
       error.httpStatusCode = 500;
       return next(error);
     });
+};
+
+// // VERSION 1 : I GENERATE A FILE THAT ALREADY EXIST
+// exports.getInvoice = (req, res, next) => {
+//   // 'orderId' is specified as params into the route
+//   const orderId = req.params.orderId;
+//   const invoiceName = "invoice-" + orderId + ".pdf";
+//   // Only auth user can acess the invoices (order routes), but I still have to make sure user can only see its own invoices
+//   Order.findById(orderId).then(order => {
+//     if (!order) {
+//       return next(new Error('No order found'));
+//     }
+//     // Is user from order db equal to logged in user?
+//     if (order.user.userId.toString() !== req.user._id.toString()) {
+//       return next(new Error('Unauthorized'));
+//     }
+//     const invoicePath = path.join("data", "invoices", invoiceName);
+//     // fs.readFile(invoicePath, (err, data) => {
+//     //   if (err) {
+//     //     // if error, I 'next' it, thus the default error handling can take over
+//     //     return next(err);
+//     //   }
+//     //   res.setHeader('Content-Type', 'application/pdf');
+//     //   // res.setHeader('Content-Disposition', 'attachement; filename="' + invoiceName + '"');
+//     //   res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
+//     //   res.send(data);
+//     // });
+//     // version Stream files (recommanded way as can manage big data files)
+//     const file = fs.createReadStream(invoicePath);
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', 'inline; filename="' + invoiceName + '"');
+//     file.pipe(res);
+//   }).catch(err => next(err));
+// };
+
+// VERSION 2 : I GENERATE A PDF FILE ON THE FLY
+exports.getInvoice = (req, res, next) => {
+  // 'orderId' is specified as params into the route
+  const orderId = req.params.orderId;
+  Order.findById(orderId)
+    .then((order) => {
+      if (!order) {
+        return next(new Error("No order found"));
+      }
+      // Is user from order db equal to logged in user?
+      if (order.user.userId.toString() !== req.user._id.toString()) {
+        return next(new Error("Unauthorized"));
+      }
+      const invoiceName = "invoice-" + orderId + ".pdf";
+      const invoicePath = path.join("data", "invoices", invoiceName);
+
+      const pdfDoc = new PDFDocument();
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        'inline; filename="' + invoiceName + '"'
+      );
+      pdfDoc.pipe(fs.createWriteStream(invoicePath));
+      pdfDoc.pipe(res);
+
+      pdfDoc.fontSize(26).text("Invoice", {
+        underline: true,
+      });
+      
+      pdfDoc.fontSize(13).text("----------------------------------------");
+
+      let totalPrice = 0;
+
+      order.products.forEach((prod) => {
+        totalPrice += prod.quantity * prod.product.price;
+        pdfDoc.text(
+          prod.product.title +
+            " - " +
+            prod.quantity +
+            " x $" +
+            prod.product.price
+        );
+      });
+
+      pdfDoc.text("Total Price: $" + totalPrice);
+
+      pdfDoc.end();
+    })
+    .catch((err) => next(err));
 };
