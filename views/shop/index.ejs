@@ -24,12 +24,22 @@
                     <a href="/products/<%= product._id %>" class="btn">details</a>
                     <!-- AN INCLUDE INTO A LOOP DOES NOT GET ALL LOCAL VAIABLES BY DEFAULT, THUS I HAVE TO PASS THEM -->
                     <% if (isAuthenticated) { %>
-                        <%- include('../includes/add-to-cart.ejs', { product: product }) %>
+                    <%- include('../includes/add-to-cart.ejs', { product: product }) %>
                     <% } %>
                 </div>
             </article>
             <% } %>
         </div>
+
+        <%- include('../includes/pagination', {
+            currentPage: currentPage,
+            nextPage: nextPage,
+            previousPage: previousPage,
+            lastPage: lastPage,
+            hasNextPage: hasNextPage,
+            hasPreviousPage: hasPreviousPage,
+        }) %>
+
         <% } else { %>
         <h2>No products found!</h2>
         <% } %>
