@@ -220,26 +220,47 @@ exports.postEditProduct = (req, res, next) => {
     });
 };
 
-exports.postDeleteProduct = (req, res, next) => {
-  const prodId = req.body.productId;
+// exports.postDeleteProduct = (req, res, next) => {
+//   const prodId = req.body.productId;
+//   Product.findById(prodId)
+//     .then((product) => {
+//       if (!product) {
+//         return next(new Error("Product not found"));
+//       }
+//       // helper to delete previous image file from file system (as I get a new one)
+//       fileHelper.deleteFile(product.imageUrl);
+//       return Product.deleteOne({ _id: prodId, userId: req.user._id });
+//     })
+//     .then(() => {
+//       console.log("DESTROYED PRODUCT");
+//       res.redirect("/admin/products");
+//     })
+//     .catch((err) => {
+//       // console.log(err);
+//       // res.redirect("/500");
+//       const error = new Error("err");
+//       error.httpStatusCode = 500;
+//       return next(error);
+//     });
+// };
+
+exports.deleteProduct = (req, res, next) => {
+  const prodId = req.params.productId;
   Product.findById(prodId)
     .then((product) => {
       if (!product) {
         return next(new Error("Product not found"));
       }
-      // helper to delete previous file from file system (as I get a new one)
       fileHelper.deleteFile(product.imageUrl);
       return Product.deleteOne({ _id: prodId, userId: req.user._id });
     })
     .then(() => {
       console.log("DESTROYED PRODUCT");
-      res.redirect("/admin/products");
+      res.status(200).json({
+        message: "Success!",
+      });
     })
     .catch((err) => {
-      // console.log(err);
-      // res.redirect("/500");
-      const error = new Error("err");
-      error.httpStatusCode = 500;
-      return next(error);
+      res.status(500).json({ message: "Deleting product failed!" });
     });
 };

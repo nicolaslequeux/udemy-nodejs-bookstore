@@ -57,6 +57,8 @@ router.post(
 );
 
 // /admin/delete-product => POST
-router.post("/delete-product", isAuth, adminController.postDeleteProduct);
+//router.post("/delete-product", isAuth, adminController.postDeleteProduct);
+// Asynchronous version with json (REST)
+router.delete("/product/:productId", isAuth, adminController.deleteProduct);
 
 module.exports = router;
