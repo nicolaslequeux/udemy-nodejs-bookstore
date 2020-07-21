@@ -1,7 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 
-const stripe = require("stripe")("sk_test_SalzPmX9MqqQJdnxYoFnEevI008rE1pBue");
+// const stripe = require("stripe")("sk_test_SalzPmX9MqqQJdnxYoFnEevI008rE1pBue");
+const stripe = require("stripe")(process.env.STRIPE_KEY);
 
 // I name it PDFDocument as pdfkit exposes a PDFDocument constructor
 const PDFDocument = require("pdfkit");

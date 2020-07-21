@@ -1,4 +1,5 @@
 const path = require("path");
+const fs = require("fs");
 
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -13,12 +14,21 @@ const MongoDBStore = require("connect-mongodb-session")(session);
 const csrf = require("csurf");
 // manage flash messages stored on session (need a session module)
 const flash = require("connect-flash");
+// secure Response headers
+const helmet = require("helmet");
+// compression middleware
+const compression = require("compression");
+// Logger
+const morgan = require("morgan");
 
 const errorController = require("./controllers/error");
 const User = require("./models/user");
 
-const MONGODB_URI =
-  "mongodb+srv://nico-test:nico123test@nodejs-bookstore-qqnku.mongodb.net/shop";
+// This variable is usually managed by the hosting provider
+console.log(process.env.NODE_ENV);
+
+// `mongodb+srv://nico-test:nico123test@nodejs-bookstore-qqnku.mongodb.net/shop`;
+const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@nodejs-bookstore-qqnku.mongodb.net/${process.env.MONGO_DEFAULT_DATABASE}`;
 
 const app = express();
 
@@ -65,6 +75,19 @@ app.set("views", "./views");
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
 const authRoutes = require("./routes/auth");
+const { Stream } = require("stream");
+
+
+// Create destination file for 'morgan' logger middleware
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  { flags: "a" }
+);
+
+// MIDDLEWARE TO SECURE RESPONSE HEADERS, COMPRESSION (Usualy managed by provider)...
+app.use(helmet());
+app.use(compression());
+app.use(morgan("combined", { stream: accessLogStream }));
 
 // MIDDLEWARES
 // Are just registered to be executed by incoming requests, thus I can register any middleware before starting sequelize which starts 'app.listen(3000)' and so on...
@@ -77,7 +100,7 @@ app.use(
 
 // public path available at the !root of the project to store css... 'public' is a convention with nodeJS
 app.use(express.static(path.join(__dirname, "public")));
-app.use('/images', express.static(path.join(__dirname, "images")));
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 // Initialization session middleware from 'express-session' package
 // this 'session' object will be available on all 'req' and stored on server side session not cookies
@@ -148,7 +171,7 @@ app.use((error, req, res, next) => {
     pageTitle: "Error!",
     path: "/500",
     isAuthenticated: req.session.isLoggedIn,
-    error: error
+    error: error,
   });
 });
 
@@ -156,7 +179,7 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then((result) => {
-    app.listen(3000);
+    app.listen(process.env.PORT || 3000);
   })
   .catch((err) => {
     console.log(err);
