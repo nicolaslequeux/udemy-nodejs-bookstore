@@ -1,4 +1,4 @@
-# FULL NODEJS SHOP APP
+# Fully functional NodeJS Shop app
 
 Based on Udemy course
 
