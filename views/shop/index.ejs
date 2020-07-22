@@ -1,5 +1,10 @@
 <%- include('../includes/head') %>
 <link rel="stylesheet" href="/css/product.css">
+
+<!-- <script>
+    alert("Demonstration App\nLogin: test@test.com + tester");
+</script> -->
+
 </head>
 
 <body>
@@ -14,7 +19,10 @@
                     <h1 class="product__title"><%= product.title %></h1>
                 </header>
                 <div class="card__image">
-                    <img src="/<%= product.imageUrl %>" alt="<%= product.title %>">
+                    <img
+                        src="/<%= product.imageUrl %>"
+                        alt="<%= product.title %>"
+                    >
                 </div>
                 <div class="card__content">
                     <h2 class="product__price">$<%= product.price %></h2>
