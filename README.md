@@ -1,4 +1,4 @@
-# NODEJS BOOKSTORE APP
+# FULL NODEJS SHOP APP
 
 Based on Udemy course
 
